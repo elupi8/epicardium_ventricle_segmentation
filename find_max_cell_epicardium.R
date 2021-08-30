@@ -49,35 +49,21 @@ readCSV = function(fileIn) {
 s.exp = "exp7_i" #name folder
 
 
-# cellLine1 = "M0921" #M0921
-# cellLine2 = "MM12" #MM12
-# s.library = "kinase"
-# s.condition = "starvation"
-# s.meas = "normCNratio" # "zscore" or "normCNratio
-# 
-
-
 # define directory with merged output
-setwd(".") # set a new working directory   --> ".." means one folder above. "." means the current folder. or use function file.path() to browse to the folder you want
+setwd(".") # set a new working directory   --> ".." means one folder above. "." means the current folder.
 
-input.Directory = getwd() # ".." means one folder above. "." means the current folder
+input.Directory = getwd() #give the name of the current directory
 
-s.dir.out.mer = "max_epicardium"
+s.dir.out.mer = "max_epicardium" #output directory
 
 
 output.Directory <- file.path(input.Directory, s.dir.out.mer)
-ifelse( !dir.exists(output.Directory), dir.create(output.Directory, recursive = T), FALSE)
+ifelse( !dir.exists(output.Directory), dir.create(output.Directory, recursive = T), FALSE) #if the folder already exists R is rewritnig on that folder
 
 
 
+s.files.core = 'deconvolved_epic_cells.csv' #part of the nae of the input file
 
-# define the filename that you want to read or a string contained in the filenames
-s.files.core = 'deconvolved_epic_cells.csv'
-
-
-
-
-# Import and prepare an object.table that contains all the plates from both cell lines--------
 
 # search subdirectories for csv files with Nuclei data
 
@@ -88,27 +74,22 @@ s.files = list.files(
   full.names = TRUE
 )
 
+s.files  # list of files finded
 
 
-
-s.files  # check that it contains the correct paths to the csv files
-
-
-## Load csv files by applying the  custom made function readCSV to all the elements whose paths are specified in s.files
 dt_segmentation = rbindlist(lapply(s.files, readCSV), use.names=TRUE, fill=FALSE, idcol=NULL) #rbindlist (l, ...) is not faster (less than 3% faster) than do.call(rbind, l) as stated in R documentation; # dt.img = do.call(rbind, lapply(s.files.img, myFreadImg))
-dt_epicardium = dt_segmentation[,.(cell.epicardium= max(V1)), by =Well]
+dt_epicardium = dt_segmentation[,.(cell.epicardium= max(V1)), by =Well] ##get the max value of the column without header (indicating the number of the epicardial cells)
 
-output.filename = paste0("cells","_of_","_epicardium_", s.exp,".csv")
-fwrite(dt_epicardium, file = file.path(output.Directory, output.filename), row.names=FALSE)
-
-
-# Data cleaning -----------------------------------------------------------
+output.filename = paste0("cells","_of_","_epicardium_", s.exp,".csv") #name of the output files
+fwrite(dt_epicardium, file = file.path(output.Directory, output.filename), row.names=FALSE) 
 
 
+
+##merge the csv file with the platemap files
 
 ## read platemap
 
-input.file.pm = file.path(input.Directory, "platemap", "platemap.csv")
+input.file.pm = file.path(input.Directory, "platemap", "platemap.csv") #platemap is a file containing name of the drugs, drug code, concentration etc...
 
 dt_platemap = fread(input.file.pm, header = T)
 
@@ -116,7 +97,7 @@ dt_platemap = dt_platemap[!(Well %in% c("", NA) ),]
 
 
 ## padd well number 
-dt_platemap$Well = toupper(dt_platemap$Well)
+dt_platemap$Well = toupper(dt_platemap$Well) #capitle letters
 dt_platemap$Well = paste0( str_extract(dt_platemap$Well, "[:alpha:]") , sprintf( '%03d', as.numeric( str_extract(dt_platemap$Well, '[0-9]+') ) ) )
 
 
@@ -130,7 +111,7 @@ dt_epicardium = merge(dt_epicardium,
 
 # Save as -----------------------------------------------------------------
 
-output.filename = paste0("Merged","_epicardial","_cells","_of_", s.exp,".csv")
+output.filename = paste0("Merged","_epicardial","_cells","_of_", s.exp,".csv") #name of the output files
 fwrite(dt_epicardium, file = file.path(output.Directory, output.filename), row.names=FALSE)
 
 
