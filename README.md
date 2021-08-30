@@ -14,6 +14,10 @@ With this script we also combine the platemap file containing: name of drugs, dr
 in this script we normalize the number of epicardial cells with the median of the respective control and we calculate the Zscore and the robustZscore.
 After that we define the statical significance of treated cells against respective control by performing the Wilcoxon text with BH correction, name of the file: 2_wilcoxtest_pValues_green_Wide.csv
 
-3) 
+3) Name of the script: “boxplot_epicardial_cells_graph”
+to plot the epicardial cells we used the file 2_wilcoxtest_pValues_green_Wide.csv in wich we manually added a column called esp indicating the number of the replicate and the incross or the outcross and we save it as new_epi_cells_for_plot.csv
+
+
+
 
 
