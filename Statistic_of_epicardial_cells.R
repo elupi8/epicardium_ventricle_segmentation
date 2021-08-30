@@ -1,5 +1,5 @@
 
-# clean 4environment
+# clean environment
 rm(list=ls())
 
 {
@@ -12,14 +12,8 @@ rm(list=ls())
   library(stringi)
   library(tidyr)
   library(plotly) 
-  library(EnhancedVolcano)        #all inizio
   
-  #library(openxlsx)
 }
-
-
-# read.xlsx <- xlsx::read.xlsx
-# write.xlsx <- xlsx::write.xlsx
 
 
 ## function
@@ -36,8 +30,6 @@ readCSV = function(fileIn) {
   
   names(dt_loc)  #names of the columns 
   
-
-  
   #change column name
   setnames(dt_loc, old = c("Drug code", "class Drug"), new= c("Drug_code", "class_Drug"), skip_absent = TRUE)
   
@@ -47,42 +39,29 @@ readCSV = function(fileIn) {
   s.exp.loc=str_extract(s.metadata.loc,"esp[:digit:]{1,2}")
   s.cross.loc=str_extract(s.metadata.loc, "(?<=esp[:digit:]{1,2}(_Stardist_)).*(?=.automatic)") 
   
-  
-
-  
   dt_loc = dt_loc[, "Experiment" := s.exp.loc] #define a new column.. if the column already exists and we want to update its value by reference to the same column, use (Gene):= fun(Gene)
   
-  
-
-    dt_loc = dt_loc[, "Cross" := s.cross.loc] #define a new column.. if the column already exists and we want to update its value by reference to the same column, use (Gene):= fun(Gene)
+  dt_loc = dt_loc[, "Cross" := s.cross.loc] #define a new column.. if the column already exists and we want to update its value by reference to the same column, use (Gene):= fun(Gene)
     
-
-
   return(dt_loc)
 }
 
 
 # define directory with merged output
 setwd(".") # set a new working directory   --> ".." means one folder above. "." means the current folder. or use function file.path() to browse to the folder you want
-getwd()
+getwd() #name of the curent directory
 
-input.Directory = getwd() # ".." means one folder above. "." means the current folder
+input.Directory = getwd() 
 
-s.epi = "epicardial_cells" # Green
+s.epi = "epicardial_cells"
 s.dir.out.mer = paste0("all_exp_merged_",s.epi,"_output")
 
 
 output.Directory <- file.path(input.Directory, s.dir.out.mer, s.epi)
 ifelse( !dir.exists(output.Directory), dir.create(output.Directory, recursive = T), FALSE)
 
-
-
 # define the filename that you want to read or a string contained in the filenames
 s.files.core = paste0("Merged_", s.epi,"_of_esp")
-
-
-
-
 
 
 s.files = list.files(
@@ -92,17 +71,15 @@ s.files = list.files(
   full.names = TRUE
 )
 
-
-
-sort(s.files ) # check that it contains the correct paths to the csv files
+sort(s.files ) # gives the list of files encountered
 
 s.files.test=s.files[1]
 ## Load csv files by applying the  custom made function readCSV to all the elements whose paths are specified in s.files
 dt_segmentation = rbindlist(lapply(s.files, readCSV), use.names=TRUE, fill=FALSE, idcol=NULL) #rbindlist (l, ...) is not faster (less than 3% faster) than do.call(rbind, l) as stated in R documentation; # dt.img = do.call(rbind, lapply(s.files.img, myFreadImg))
 
 
-output.filename = paste0("Segmentation","_of_epicardial_cells","_all_exp",".csv")
-fwrite(dt_segmentation, file = file.path(output.Directory, output.filename), row.names=FALSE)
+output.filename = paste0("Segmentation","_of_epicardial_cells","_all_exp",".csv") #name of the output file
+fwrite(dt_segmentation, file = file.path(output.Directory, output.filename), row.names=FALSE) #write on the folder
 
 
 
@@ -111,41 +88,41 @@ fwrite(dt_segmentation, file = file.path(output.Directory, output.filename), row
 # Data cleaning -----------------------------------------------------------
 
 names(dt_segmentation)
-dt_stats = dt_segmentation[, .(mean.cell.epicardium= mean(cell.epicardium), #standard deviation
+dt_stats = dt_segmentation[, .(mean.cell.epicardium= mean(cell.epicardium), #mean
                                se.cell.epicardium = sd(cell.epicardium)/ sqrt(length(cell.epicardium)),  #standard error
                                median.cell.epicardium = as.numeric(median(cell.epicardium)), #median
                                Q1.cell.epicardium = quantile(cell.epicardium, 1/4)[[1]], #1st quartile
-                                Q3.cell.epicardium = quantile(cell.epicardium, 3/4)[[1]], #3rd quartile
+                               Q3.cell.epicardium = quantile(cell.epicardium, 3/4)[[1]], #3rd quartile
                                IQR.cell.epicardium = IQR(cell.epicardium), #interquartile range
                                mad.cell.epicardium = mad(cell.epicardium), #median absolute deviation
-                               sd.cell.epicardium=sd(cell.epicardium)
+                               sd.cell.epicardium=sd(cell.epicardium) # standard deviation
                                
                               
 ),
-by = c("Drug", "Concentration", "Experiment", "Cross") #by = .(Image_Metadata_WellNum, Image_Metadata_PlateName)
+by = c("Drug", "Concentration", "Experiment", "Cross") #by = grouping 
 ]
 
 
 
 s.experiments = sort(unique(dt_segmentation$Experiment)) 
-features_toNorm = c("cell.epicardium")
+features_toNorm = c("cell.epicardium") #name of the column to normalize
 
-s.control.toNorm = "dmso" 
+s.control.toNorm = "dmso" #name of the control group
 
-s.cols.combination = c("Experiment", "Cross")
+s.cols.combination = c("Experiment", "Cross") #grouping
 dt_combination = unique(dt_segmentation[, ..s.cols.combination])
 
-
+#for_loop
 for (i in 1:length(features_toNorm)) {
   
-  # i = 1
+  # i = 1  #this is just to test with the first value of the column
   ###
   
   y_plot = features_toNorm[i]
   
   previous_temp_experiment = "A"
   
-  for (j in 1:dim(dt_combination)[1] ) {   #dim da le dimensioni delle tavole, cioè righe e colonne, mettendo [1] mi rida solo le righe
+  for (j in 1:dim(dt_combination)[1] ) {   #dim da le dimensioni delle tavole, cioÃ¨ righe e colonne, mettendo [1] mi rida solo le righe
     # j=1
     
     temp_experiment = dt_combination[j, Experiment]
@@ -186,12 +163,12 @@ for (i in 1:length(features_toNorm)) {
     
     ## create table with normalized data
     y_plot_norm = paste0(y_plot,"_norm") #create string name for the normalized variable
-    y_plot_robustZscore = paste0(y_plot,"_robustZscore")
-    y_plot_Zscore = paste0(y_plot,"_Zscore")
+    y_plot_robustZscore = paste0(y_plot,"_robustZscore") #Z-score calculated with the median and the mad
+    y_plot_Zscore = paste0(y_plot,"_Zscore") #z score calculated with the mean and the standard deviation
     
     # normalize against control
     dt_segmentation[(Experiment == temp_experiment) &
-                      (Cross== temp_cross), noquote(y_plot_norm) := get(noquote(y_plot)) / median_to_norm] #area di ogni well diviso mediana dell area del controllo
+                      (Cross== temp_cross), noquote(y_plot_norm) := get(noquote(y_plot)) / median_to_norm] #epicardial cells/median of the control
     
     
     dt_segmentation[(Experiment == temp_experiment) &
@@ -214,7 +191,7 @@ names(dt_segmentation)
 
 ### save table 
 
-output.norm_red = paste0("norm_epicardium_robZscore_all_exp",".csv")
+output.norm_red = paste0("norm_epicardium_robZscore_all_exp",".csv") #normalized results
 fwrite(dt_segmentation, file = file.path(output.Directory, output.norm_red), row.names=FALSE)
 
 
