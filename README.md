@@ -10,6 +10,10 @@ In those csv files indeed, each epicardial cells of one heart is listed one by o
 With this script we also combine the platemap file containing: name of drugs, drug code, concentration..., with the number of cells and the well, name of the file: Merged_epicardial_cells_of_"name of the experiment"
 
 
-2) Name of the script: 
+2) Name of the script: "statistic_of_epicardial_cells"
+in this script we normalize the number of epicardial cells with the median of the respective control and we calculate the Zscore and the robustZscore.
+After that we define the statical significance of treated cells against respective control by performing the Wilcoxon text with BH correction, name of the file: 2_wilcoxtest_pValues_green_Wide.csv
+
+3) 
 
 
