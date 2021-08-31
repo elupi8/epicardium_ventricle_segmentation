@@ -26,4 +26,6 @@ this script is used to combine the files containing areas and ventricle parament
 in this script we normalize the ventricle area with the median of the respective control and we calculate the Zscore and the robustZscore.
 After that we define the statical significance of area against respective control by performing the Wilcoxon text with BH correction, name of the file: 2_wilcoxtest_pValues_heart_Wide.csv
 
+6) Name of the script: “boxplot_ventricle_area”
+to plot the ventricle areas we used the file 2_wilcoxtest_pValues_heart_Wide.csv in wich we manually added a column called esp indicating the number of the replicate and the incross or the outcross and we save it as heart_for_plot.csv
 
