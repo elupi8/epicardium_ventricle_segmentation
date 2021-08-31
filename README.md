@@ -17,8 +17,8 @@ After that we define the statical significance of treated cells against respecti
 3) Name of the script: “boxplot_epicardial_cells_graph”
 to plot the epicardial cells we used the file 2_wilcoxtest_pValues_green_Wide.csv in wich we manually added a column called esp indicating the number of the replicate and the incross or the outcross and we save it as new_epi_cells_for_plot.csv
 
-
-
+4) Name of the script: "merge_ventricle_area_with_platemap"
+this script is used to combine the files containing areas and ventricle paramenters and the platemap file (containing name of the drugs, drug code, concentration etc.."
 
 
 
