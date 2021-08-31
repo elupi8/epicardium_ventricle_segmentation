@@ -16,9 +16,6 @@ rm(list=ls())
   #library(openxlsx)
 }
 
-
-
-
 ## function
 readCSV = function(fileIn) {
   
@@ -37,15 +34,11 @@ readCSV = function(fileIn) {
   setnames(dt_loc, old = c("Drug code", "class Drug"), new= c("Drug_code", "class_Drug"), skip_absent = TRUE)
   
   
-  # extract name of the well form the filename
+  # extract metadata from the file name
   s.metadata.loc = str_extract(fileIn, "esp[:digit:]{1,2}([:graph:].*|)(?=.csv)") # {3} means look for exactly 3 elements. "+" means "how many elements are available, how many you can find that corresponds"
   s.exp.loc=str_extract(s.metadata.loc,"esp[:digit:]{1,2}")
   s.cross.loc=str_extract(s.metadata.loc, "(?<=esp[:digit:]{1,2}(_Stardist_)).*(?=.automatic)") 
-  
-  
-  
-  
-
+ 
   
   dt_loc = dt_loc[, "Experiment" := s.exp.loc] #define a new column.. if the column already exists and we want to update its value by reference to the same column, use (Gene):= fun(Gene)
   
@@ -75,9 +68,7 @@ ifelse( !dir.exists(output.Directory), dir.create(output.Directory, recursive = 
 
 
 # define the filename that you want to read or a string contained in the filenames
-s.files.core = paste0("Merged_", s.heart,"_of_esp")
-
-
+s.files.core = paste0("Merged_", s.heart,"_of_esp") #input file name
 
 
 # Import and prepare an object.table that contains all the plates from both cell lines--------
@@ -92,12 +83,10 @@ s.files = list.files(
   full.names = TRUE
 )
 
-
-
 sort(s.files ) # check that it contains the correct paths to the csv files
 
 s.files.test=s.files[1]
-## Load csv files by applying the  custom made function readCSV to all the elements whose paths are specified in s.files
+## combine all the csv of the ventricle paramenters together from different experiments
 dt_segmentation = rbindlist(lapply(s.files, readCSV), use.names=TRUE, fill=FALSE, idcol=NULL) #rbindlist (l, ...) is not faster (less than 3% faster) than do.call(rbind, l) as stated in R documentation; # dt.img = do.call(rbind, lapply(s.files.img, myFreadImg))
 
 
@@ -108,24 +97,22 @@ fwrite(dt_segmentation, file = file.path(output.Directory, output.filename), row
 
 
 
-# Data cleaning -----------------------------------------------------------
+#-----------------------------------------------------------
 
 names(dt_segmentation)
-dt_stats = dt_segmentation[, .(mean.Area = mean(Area), #standard deviation
+dt_stats = dt_segmentation[, .(mean.Area = mean(Area), #mean
                                se.Area = sd(Area)/ sqrt(length(Area)),  #standard error
                                median.Area = as.numeric(median(Area)), #median
                                Q1.Area = quantile(Area, 1/4)[[1]], #1st quartile
                                Q3.Area = quantile(Area, 3/4)[[1]], #3rd quartile
                                IQR.Area = IQR(Area), #interquartile range
                                mad.Area = mad(Area), #median absolute deviation
-                               sd.Area = sd(Area)
+                               sd.Area = sd(Area) # standard deviation
                                
                                
 ),
 by = c("Drug", "Concentration", "Experiment", "Cross") #by = .(Image_Metadata_WellNum, Image_Metadata_PlateName)
 ]
-
-
 
 ### normalize data against control
 
@@ -210,18 +197,13 @@ names(dt_segmentation)
 
 
 
-
-
-
-### save table 
+### save table of normilized data by the median of the control and the calculation of zscore and robust zscore
 
 output.norm_red = paste0("norm_heart_robZscore_all_exp",".csv")
 fwrite(dt_segmentation, file = file.path(output.Directory, output.norm_red), row.names=FALSE)
 
 
-
-
-# p_values ----------------------------------------------------------------
+# p_values statistics ----------------------------------------------------------------
 
 dt_segmentation = dt_segmentation[, uniqueID := paste(Drug, Concentration, sep = "_")] #create unique Drug IDs by pasting the columns Drug and Concentration
 sort( unique(dt_segmentation$uniqueID) )
@@ -252,65 +234,6 @@ dt_segmentation$uniqueID = stri_replace_all_fixed(dt_segmentation$uniqueID,
 l.pvalues = vector(mode = "list", length = dim(dt_combination)[1])
 
 unique(dt_segmentation$Experiment)
-
-
-
-
-for (i in 1: dim(dt_combination)[1]){
-  # i = 1
-  temp_exp = as.character(dt_combination[i,1])
-  temp_cross = as.character(dt_combination[i,2])
-  
-  
-  
-  dt_p_values_temp = compare_means(c(Area,
-                                    
-  )
-  ~ uniqueID #concentration
-  , data = dt_segmentation[(Experiment == temp_exp) &
-                             (Cross == temp_cross)] #exp cross drug
-  , method = "kruskal.test" #  default is "wilcox.test", but it accepts "t.test", "anova", "kruskal.test"
-  
-  , p.adjust.method = "BH" # "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none"
-  , symnum.args = list(cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 1),
-                       symbols = c("****", "***", "**", "*", "ns")) #In other words, we use the following convention for symbols indicating statistical significance: 1) ns: p > 0.05 / 2) *: p <= 0.05 / 3) **: p <= 0.01 / 4) ***: p <= 0.001 / 5) ****: p <= 0.0001
-  )
-  
-  class(dt_p_values_temp)
-  
-  dt_p_values_temp = as.data.table(dt_p_values_temp)
-  
-  
-  l.pvalues[[i]] = dt_p_values_temp
-  names(l.pvalues)[i] = paste(temp_exp, temp_cross, sep = "_") # name of the i-th element of the list
-}
-
-l.pvalues[1]
-l.pvalues.backup = copy(l.pvalues)
-
-
-dt.pvalues = rbindlist(l.pvalues, use.names = T, fill = T, idcol = "unique_plate")
-
-setnames(dt.pvalues, old = c(".y."), new = c( "feature"), skip_absent = T)
-
-
-dt.pvalues = separate(data = dt.pvalues, col = "unique_plate", into = c("Experiment","Cross"), sep = "_")
-
-
-
-# make dt_pvalues wide format
-names(dt.pvalues)
-
-dt.pvalues.wide = pivot_wider(dt.pvalues#[,c("ncells", "nFOV") := NULL]
-                              , id_cols = c("Experiment","Cross","method" ), #cols not to pivot
-                              names_from = "feature", #to pivot
-                              values_from = c("p", "p.adj", "p.format", "p.signif"))
-
-output.p_values = "2_kruskal_pValues_heart_Wide.csv"
-fwrite(dt.pvalues.wide, file = file.path(input.Directory, s.dir.out.mer, s.heart, output.p_values ), row.names = TRUE, quote = FALSE )
-
-
-
 
 
 for (i in 1: dim(dt_combination)[1]){
@@ -395,45 +318,8 @@ dt_segmentation_pvalues$uniqueID = gsub(",", replacement = "_", dt_segmentation_
 
 
 
-output.p_values = "2_wilcoxtest_pValues_heart_Wide.csv"
+output.p_values = "2_wilcoxtest_pValues_heart_Wide.csv" #final csv
 fwrite(dt_segmentation_pvalues, file = file.path(input.Directory, s.dir.out.mer, s.heart, output.p_values ), row.names = TRUE, quote = FALSE )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
