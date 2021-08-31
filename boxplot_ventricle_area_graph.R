@@ -1,11 +1,12 @@
 
 #create boxplot of the ventricle areas, in the imported file was added an additional column indicating the number of the repetion and incross or outcross
-
+rm(list=ls()) #clean space
 setwd(".") # set a new working directory   --> ".." means one folder above. "." means the current folder. or use function file.path() to browse to the folder you want
 getwd()
 
 input.Directory = getwd()
 
+##------------- if R was closed and no library are loaded please load the ggplot library
 
 input.file.pm = file.path(input.Directory, "heart_for_plot.csv")
 
@@ -59,11 +60,9 @@ f <- e + geom_hline(yintercept = 1,
 #CC33CC"
 
 
-
-
 e<-f+scale_color_manual(values=c("#000033", "#660099", "#CC33CC", "#FF3399", "#999999"))
 
-e
+e #to visualize the graph
 
 
 
