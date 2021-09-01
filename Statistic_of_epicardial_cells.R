@@ -231,6 +231,61 @@ unique(dt_segmentation$Experiment)
 
 
 for (i in 1: dim(dt_combination)[1]){
+ # i = 1
+  temp_exp = as.character(dt_combination[i,1])
+  temp_cross = as.character(dt_combination[i,2])
+ 
+  
+  
+  dt_p_values_temp = compare_means(c(cell.epicardium,
+                                   
+  )
+  ~ uniqueID #concentration
+  , data = dt_segmentation[(Experiment == temp_exp) &
+                             (Cross == temp_cross)] #exp cross drug
+  , method = "kruskal.test" #  default is "wilcox.test", but it accepts "t.test", "anova", "kruskal.test"
+  
+  , p.adjust.method = "BH" # "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none"
+  , symnum.args = list(cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 1),
+                       symbols = c("****", "***", "**", "*", "ns")) #In other words, we use the following convention for symbols indicating statistical significance: 1) ns: p > 0.05 / 2) *: p <= 0.05 / 3) **: p <= 0.01 / 4) ***: p <= 0.001 / 5) ****: p <= 0.0001
+  )
+  
+  class(dt_p_values_temp)
+  
+  dt_p_values_temp = as.data.table(dt_p_values_temp)
+  
+  
+  l.pvalues[[i]] = dt_p_values_temp
+  names(l.pvalues)[i] = paste(temp_exp, temp_cross, sep = "_") # name of the i-th element of the list
+}
+
+l.pvalues[1]
+l.pvalues.backup = copy(l.pvalues)
+
+
+dt.pvalues = rbindlist(l.pvalues, use.names = T, fill = T, idcol = "unique_plate")
+
+setnames(dt.pvalues, old = c(".y."), new = c( "feature"), skip_absent = T)
+
+
+dt.pvalues = separate(data = dt.pvalues, col = "unique_plate", into = c("Experiment","Cross"), sep = "_")
+
+
+
+
+# make dt_pvalues wide format
+names(dt.pvalues)
+
+dt.pvalues.wide = pivot_wider(dt.pvalues#[,c("ncells", "nFOV") := NULL]
+                              , id_cols = c("Experiment","Cross","method" ), #cols not to pivot
+                              names_from = "feature", #to pivot
+                              values_from = c("p", "p.adj", "p.format", "p.signif"))
+
+output.p_values = "2_kruskal_pValues_green_Wide.csv"
+fwrite(dt.pvalues.wide, file = file.path(input.Directory, s.dir.out.mer, s.epi, output.p_values ), row.names = TRUE, quote = FALSE )
+
+
+for (i in 1: dim(dt_combination)[1]){
 # i = 1
   temp_exp = as.character(dt_combination[i,1])
   temp_cross = as.character(dt_combination[i,2])
